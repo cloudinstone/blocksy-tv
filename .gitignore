@@ -1,0 +1,19 @@
+# Ignore WordPress core files
+wp-admin/
+wp-includes/
+
+# Ignore development files
+node_modules/
+vendor/
+
+# Ignore build files
+dist/
+build/
+*.min.js
+*.min.css
+
+# Ignore temporary files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
