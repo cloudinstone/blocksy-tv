@@ -1,10 +1,20 @@
+:root {
+    --theme-image-border-radius: 8px;
+}
+
+.player-area {
+    video {
+        width: 100%;
+    }
+}
+
 .play-url-groups {}
 
 .play-url-group {
-
-    .group-body {
+    .play-url-list {
+        width: 100%;
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(20ch, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(10ch, 1fr));
         gap: 1rem;
     }
 
@@ -12,10 +22,88 @@
         display: inline-block;
         padding: .25rem 1rem;
         border-radius: 4px;
-        border: 1px solid #eee;
+        text-align: center;
+        background: #eee;
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
         cursor: pointer;
+    }
+}
+
+.info {
+    .thumbnail {
+        float: left;
+        width: 15rem;
+        margin-inline-end: 1rem;
+    }
+}
+
+[data-archive=default][data-layout*=grid],
+[data-archive=default][data-layout=classic],
+[data-archive=default][data-layout=simple] {
+    .entry-card {
+        .ct-media-container {
+            +.entry-meta {
+                margin-top: -52px;
+                margin-bottom: 0;
+                position: relative;
+                line-height: 32px;
+                text-align: right;
+                color: #fff;
+                padding: 0 12px;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, .5);
+            }
+        }
+    }
+}
+
+[data-prefix="wptv_post_archive"] .entries {
+    --grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.play-container {
+    display: flex;
+
+    .player-area {
+        flex: 1;
+        width: calc(100% - 30rem);
+
+        video {
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+    }
+
+    .info-area {
+        width: 30rem;
+    }
+}
+
+.source-provider-switch-containerd {
+    height: 3rem;
+    position: relative;
+}
+
+.source-provider-switch-listd {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+
+    li {
+        display: block;
+        padding: 0 1rem;
+        height: 3rem;
+        line-height: 3rem;
+        background: #333;
+        color: #fff;
+
+        &:not(.current) {
+            display: none;
+        }
     }
 }

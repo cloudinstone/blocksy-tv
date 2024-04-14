@@ -19,25 +19,43 @@ function wptv_vod_attr_row($key, $label, $type = 'post_meta') {
     </div>
 <?php }
 
-function wptv_vod_get_play_urls($post_id) {
-    $play_url_groups = get_post_meta($post_id, 'play_urls', true);
+function wptv_vod_get_source_urls($post_id) {
+    $source_url_groups = get_post_meta($post_id, 'source_urls', true);
 
-    if (!is_array($play_url_groups) || empty($play_url_groups)) {
-        $play_url_groups = [];
+    if (!is_array($source_url_groups) || empty($source_url_groups)) {
+        $source_url_groups = [];
     } else {
-        foreach ($play_url_groups as $key => $group) {
+        foreach ($source_url_groups as $key => $group) {
             // Clean invalid group.
-            if (is_int($key) || empty($group['provider']) || empty($group['urls'])) {
-                unset($play_url_groups[$key]);
+            if (empty($group['provider_id']) || empty($group['urls'])) {
+                unset($source_url_groups[$key]);
             }
         }
     }
 
-    return $play_url_groups;
+    foreach ($source_url_groups as $key => $group) {
+        $lines = explode("\n", $group['urls']);
+
+        $set = [];
+        foreach ($lines as $line) {
+            $pair = explode('$', $line);
+            $set[] = [
+                'label' => $pair[0],
+                'url' => $pair[1]
+            ];
+        }
+
+        $source_url_groups[$key]['src_set'] = $set;
+    }
+
+    return $source_url_groups;
 }
 
-function wptv_vod_play_urls($post_id) {
-    $groups = wptv_vod_get_play_urls($post_id);
+function wptv_vod_source_urls($post_id) {
+    $groups = wptv_vod_get_source_urls($post_id);
+    $groups = array_values($groups);
+
+    // var_dump($groups);
 
     echo '<section class="play-url-groups">';
 
@@ -48,8 +66,49 @@ function wptv_vod_play_urls($post_id) {
         return;
     }
 
-    foreach ($groups as $group) {
-        $provider = get_term_by('slug', $group['provider'], 'wptv_provider');
+    echo '<div class="source-toolbar">';
+    echo '<div class="source-provider-switch-container">';
+
+
+
+
+
+
+?>
+    <md-filled-select>
+        <md-select-option value="apple">
+            <div slot="headline">Apple</div>
+        </md-select-option>
+        <md-select-option value="apricot">
+            <div slot="headline">Apricot</div>
+        </md-select-option>
+    </md-filled-select>
+
+<?php
+    echo '<ul class="source-provider-switch-list">';
+
+    foreach ($groups as $i => $group) {
+        $class = '';
+        if ($i == 0) {
+            $class = 'current';
+        }
+        if (!empty($group['provider_id']))
+            $provider = get_term_by('id', $group['provider_id'], 'wptv_provider');
+        elseif (!empty($group['provider']))
+            $provider = get_term_by('slug', $group['provider'], 'wptv_provider');
+
+        echo '<li class="' . $class . '">' . $provider->name . '</li>';
+    }
+    echo '</ul></div>';
+    echo '</div>';
+
+    foreach ($groups as $i => $group) {
+        if (!empty($group['provider_id']))
+            $provider = get_term_by('id', $group['provider_id'], 'wptv_provider');
+        elseif (!empty($group['provider']))
+            $provider = get_term_by('slug', $group['provider'], 'wptv_provider');
+
+        // var_dump($provider);
 
         echo '<div class="play-url-group">';
 
@@ -60,16 +119,34 @@ function wptv_vod_play_urls($post_id) {
         $lines = explode("\n", $group['urls']);
 
         echo '<div class="group-body">';
-        foreach ($lines as $line) {
+
+
+
+        echo '<div class="play-url-list">';
+        foreach ($lines as $index => $line) {
             $pair = explode('$', $line);
             $label = $pair[0];
             $url = $pair[1];
-            echo '<span class="play-url" data-url="' . $url . '">' . $label . '</span>';
+
+            $play_id = $group['provider_id'] . '-' . ($index + 1);
+
+            echo '<span class="play-url" data-id="' . $play_id . '" data-url="' . $url . '">' . $label . '</span>';
         }
+        echo '</div>';
+
         echo '</div>';
 
         echo '</div>';
     }
 
-    echo '</div>';
+    echo '</section>';
+}
+
+
+function get_play_url($post_id, $provider_id, $index) {
+    $url = get_permalink($post_id);
+    $url = trailingslashit($url);
+    $url .= $provider_id . '-' . $index;
+
+    return $url;
 }
