@@ -107,3 +107,13 @@
         }
     }
 }
+
+.item-loop {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: 1rem;
+
+    h2 {
+        font-size: 1rem;
+    }
+}

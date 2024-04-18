@@ -8,102 +8,63 @@
  * @package Blocksy
  */
 
-use function PHPSTORM_META\map;
+use WPTVCore\DoubanMovieSubjectParser;
+use Brick\Schema\SchemaReader;
+use Overtrue\Pinyin\Pinyin;
+use WPTVCore\DataCleaner;
+use WPTVCore\DoubanBookSubjectParser;
+use WPTVCore\DoubanMoviePageParser;
+use WPTVCore\Helpers;
 
 get_header();
 
-wp_defer_term_counting(true);
-
-$taxonomy_name = 'wptv_actor';
-$terms = get_terms(array(
-    'taxonomy' => $taxonomy_name,
-    'hide_empty' => false,
-    'number' => 1000,
-    'orderby' => 'count',
-    'order' => 'ASC'
-    // 'fields' => 'ids'
-));
-
-if (empty($terms)) {
-    var_dump('没有了');
-    return;
-}
-
-$min_count = 10;
-
-foreach ($terms as $term) {
-
-    if ($term->count < $min_count) {
-        var_dump($term->name);
-        wp_delete_term($term->term_id, $taxonomy_name);
-    } else {
-        var_dump($term->count . 'count已经大于' . $min_count);
-        die;
-        break;
-    }
-}
-wp_defer_term_counting(false);
 
 
 
 
-?>
+// DataCleaner::delete_unpopular_terms('wptv_director');
 
-<script>
-    window.location.reload();
-</script>
 
-<?php
 
-function fix_append_provider() {
 
-    $query = new WP_Query([
-        'post_type' => 'wptv_post',
-        'posts_per_page' => 100,
-        'meta_query' => [
-            [
-                'key' => 'source_urls',
-                'value' => 'ikzybf.com',
-                'compare' => 'LIKE'
-            ]
-        ],
-        'tax_query' => [
-            [
-                'taxonomy' => 'wptv_provider',
-                'field' => 'slug',
-                'operator' => 'NOT IN',
-                'terms' => 'ikunzy'
-            ]
-        ],
-        'fields' => 'ids'
-    ]);
-    $posts = $query->posts;
 
-    echo '还有' . $query->found_posts . '条待处理';
 
-    if (empty($posts)) {
-        echo '没有文章了';
-        die;
-    }
+// $id = '36514643';
 
-    $provider = get_term_by('slug', 'ikunzy', 'wptv_provider');
-    // var_dump($provider);
+// $parser = new DoubanBookSubjectParser($id);
+// $data = $parser->get_data();
 
-    foreach ($posts as $post_id) {
-        // $t = get_post_meta($post_id, 'source_urls', true);
-        wp_set_post_terms($post_id, [$provider->term_id], 'wptv_provider', true);
+// var_dump($data);
+// die;
 
-        // var_dump($t);
-    }
-?>
+// $id  = '35736202';
 
-    <script>
-        window.location.reload();
-    </script>
-<?php
+// $parser = new DoubanMovieSubjectParser($id);
+// $data = $parser->get_data();
 
-    die;
-}
+// var_dump($data);
+
+
+// $query = new WP_Query([
+//     'post_type' => 'wptv_post',
+//     'tax_query' => [
+//         [
+//             'taxonomy' => 'wptv_category',
+//             'terms' => ['recap'],
+//             'field' => 'slug'
+//         ]
+//     ],
+//     'meta_query' => [
+//         [
+//             'key' => 'douban_id',
+//             'compare' => 'EXISTS'
+//         ]
+//     ]
+// ]);
+
+// var_dump($query->found_posts);
+
+
 
 $provider_id = (int)get_query_var('provider');
 
@@ -111,6 +72,20 @@ $episode = (int)get_query_var('episode');
 
 
 $sources = wptv_vod_get_source_urls($post->ID);
+
+
+echo '<ul class="m3u8-urls">';
+foreach ($sources as $group) {
+    $provider = get_term($group['provider_id'], 'wptv_provider');
+
+    $first_url = $group['srclist'][0]['url'];
+
+    printf('<li>%s: <a title="%s" href="%s">%s</a></li>', $provider->name, $provider->name, $first_url, $first_url);
+    // $content = file_get_contents($first_url);
+    // var_dump($content);
+}
+echo '</ul>';
+
 
 $first = reset($sources);
 
@@ -122,12 +97,16 @@ $episode = 1;
 
 
 
+
+
 ?>
 
 <div class="ct-container">
 
     <?php while (have_posts()) : the_post();
         global $post;
+
+        var_dump($post);
 
 
         // var_dump($sources);
@@ -144,7 +123,7 @@ $episode = 1;
         <div class="play-container">
             <div class="player-area">
                 <div class="player">
-                    <video id="video" src="<?php echo $src['url']; ?>" controls></video>
+                    <video id="video" data-src="<?php echo $src['url']; ?>" controls></video>
 
                 </div>
             </div>
@@ -152,6 +131,27 @@ $episode = 1;
 
 
             <div class="info-area">
+
+                <h1 class="entry-title">
+                    <?php the_title(); ?>
+                    <?php echo get_the_term_list($post->ID, 'wptv_year'); ?>
+                </h1>
+
+                <mark><?php echo get_post_meta($post->ID, 'remarks', true); ?></mark>
+
+                <?php
+                // var_dump($post);
+                $douban_id = get_post_meta($post->ID, 'douban_id', true);
+                // var_dump($douban_id);
+                if ($douban_id) {
+                    printf('<a href="%s">%s</a>', 'https://movie.douban.com/subject/' . $douban_id . '/', __('豆瓣', 'wptv'));
+                }
+
+                echo $post->douban_score;
+                ?>
+
+
+
                 <?php
 
                 $tabs = [
@@ -181,13 +181,7 @@ $episode = 1;
                         <?php the_post_thumbnail(); ?>
                     </div>
 
-                    <?php the_terms($post->ID, 'wptv_category'); ?>
-                    <h1 class="entry-title">
-                        <?php the_title(); ?>
-                        <?php echo get_post_meta($post->ID, 'aka_names', true); ?>
-                        <?php echo get_post_meta($post->ID, 'version', true); ?>
-                        <?php echo get_post_meta($post->ID, 'remarks', true); ?>
-                    </h1>
+
 
                     <div class="entry-content">
                         <?php the_content(); ?>
@@ -195,33 +189,20 @@ $episode = 1;
 
                     <div class="entry-attrs">
                         <?php
-                        wptv_vod_attr_row('wptv_director', __('Director', 'wptv'), 'term');
-                        wptv_vod_attr_row('wptv_writer', __('Writer', 'wptv'), 'term');
-                        wptv_vod_attr_row('wptv_actor', __('Actor', 'wptv'), 'term');
-                        wptv_vod_attr_row('wptv_area', __('Area', 'wptv'), 'term');
-                        wptv_vod_attr_row('wptv_lang', __('Language', 'wptv'), 'term');
+                        wptv_vod_attr_row('directors', __('导演', 'wptv'), 'post_meta');
+                        wptv_vod_attr_row('writers', __('编剧', 'wptv'), 'post_meta');
+                        wptv_vod_attr_row('actors', __('主演', 'wptv'), 'post_meta');
 
+                        wptv_vod_attr_row('wptv_category', __('类型', 'wptv'), 'term');
+                        wptv_vod_attr_row('wptv_area', __('地区', 'wptv'), 'term');
+                        wptv_vod_attr_row('wptv_lang', __('语言', 'wptv'), 'term');
 
-                        wptv_vod_attr_row('pubdate', __('Publish Date', 'wptv'), 'post_meta');
-                        wptv_vod_attr_row('duration', __('Duration', 'wptv'), 'post_meta');
-                        wptv_vod_attr_row('douban_id', __('Douban ID', 'wptv'), 'post_meta');
+                        wptv_vod_attr_row('pubdate', __('上映日期', 'wptv'), 'post_meta');
+                        wptv_vod_attr_row('duration', __('片长', 'wptv'), 'post_meta');
+                        wptv_vod_attr_row('aka_names', __('又名', 'wptv'), 'post_meta');
 
-                        wptv_vod_attr_row('wptv_tag', __('Tags', 'wptv'), 'post_meta');
-
-
-                        echo get_the_term_list($post->ID, 'wptv_year', __('Year', 'wptv'));
 
                         echo '</br>';
-
-                        $douban_id = $post->douban_id;
-                        if ($douban_id) {
-                            printf('<a href="%s">%s</a>', 'https://movie.douban.com/subject/' . $douban_id . '/', __('豆瓣'));
-                        }
-
-                        echo $post->douban_score;
-
-
-
                         ?>
                     </div>
                 </div>

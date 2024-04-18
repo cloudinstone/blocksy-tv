@@ -1,5 +1,9 @@
 <?php
 
+use WPTVCore\DoubanMoviePageParser;
+use WPTVCore\DoubanMovieSearchApi;
+use WPTVCore\Helpers;
+
 function wptv_vod_attr_row($key, $label, $type = 'post_meta') {
     global $post;
 ?>
@@ -34,21 +38,25 @@ function wptv_vod_get_source_urls($post_id) {
     }
 
     foreach ($source_url_groups as $key => $group) {
-        $lines = explode("\n", $group['urls']);
-
-        $set = [];
-        foreach ($lines as $line) {
-            $pair = explode('$', $line);
-            $set[] = [
-                'label' => $pair[0],
-                'url' => $pair[1]
-            ];
-        }
-
-        $source_url_groups[$key]['src_set'] = $set;
+        $source_url_groups[$key]['srclist'] = Helpers::parse_vod_srcset($group['urls'], "\n");
     }
 
     return $source_url_groups;
+}
+
+function wptv_split_url_group($url_group) {
+    $set = [];
+
+    $lines = explode("\n", $url_group);
+    foreach ($lines as $line) {
+        $pair = explode('$', $line);
+        $set[] = [
+            'label' => $pair[0],
+            'url' => $pair[1]
+        ];
+    }
+
+    return $set;
 }
 
 function wptv_vod_source_urls($post_id) {
@@ -71,7 +79,7 @@ function wptv_vod_source_urls($post_id) {
 
 
 
-
+    $post = get_post($post_id);
 
 
 ?>
@@ -97,6 +105,8 @@ function wptv_vod_source_urls($post_id) {
         elseif (!empty($group['provider']))
             $provider = get_term_by('slug', $group['provider'], 'wptv_provider');
 
+
+
         echo '<li class="' . $class . '">' . $provider->name . '</li>';
     }
     echo '</ul></div>';
@@ -110,10 +120,26 @@ function wptv_vod_source_urls($post_id) {
 
         // var_dump($provider);
 
+        $api_url = get_term_meta($provider->term_id, 'api_url', true);
+
+        $api_url = add_query_arg(['ac' => 'detail', 'wd' => get_the_title($post_id)], $api_url);
+        $api_link = '<a href="' . $api_url . '">API</a>';
+
+
+
+        $reimport_url = 'http://hdzy.local/wp-admin/admin.php?page=wptv-import';
+        $reimport_url = add_query_arg([
+            'provider_id' => $provider->term_id,
+            'keyword' => get_the_title($post_id),
+            'redirect' => 0
+        ], $reimport_url);
+
+        $reimport_link = '<a href="' . $reimport_url . '">重新导入</a>';
+
         echo '<div class="play-url-group">';
 
         echo '<div class="group-header">';
-        echo '<h3>' . $provider->name . '</h3>';
+        echo '<h3>' . $provider->name . $api_link . $reimport_link .  '</h3>';
         echo '</div>';
 
         $lines = explode("\n", $group['urls']);
@@ -149,4 +175,65 @@ function get_play_url($post_id, $provider_id, $index) {
     $url .= $provider_id . '-' . $index;
 
     return $url;
+}
+
+
+function wptv_get_items_by_douban_ids($douban_ids, $args = []) {
+    $args = array_merge([
+        'post_type' => 'wptv_post',
+        'posts_per_page' => 100,
+        'meta_query' => [
+            [
+                'key' => 'douban_id',
+                'compare' => 'IN',
+                'value' => $douban_ids
+            ]
+        ]
+    ], $args);
+    $posts = get_posts($args);
+
+    return $posts;
+}
+
+function wptv_get_douban_upcoming_to_theaters() {
+    $transient = 'douban_upcoming_movies';
+    $items = get_transient($transient);
+
+    if (empty($items)) {
+        $items = DoubanMoviePageParser::get_upcoming_to_theaters();
+
+        set_transient($transient, $items, 24 * HOUR_IN_SECONDS);
+    }
+
+    return $items;
+}
+
+
+function wptv_get_douban_nowplaying_in_theaters() {
+    $transient = 'douban_nowplaying_movies';
+
+    $items = get_transient($transient);
+
+    if (empty($items)) {
+        $items = DoubanMoviePageParser::get_nowplaying_in_theaters();
+
+        set_transient($transient, $items, 24 * HOUR_IN_SECONDS);
+    }
+
+    return $items;
+}
+
+
+function wptv_douban_search_subjects($transient, $params = [], $args = []) {
+    // delete_transient($transient);
+
+    $items = get_transient($transient);
+
+    if (empty($items)) {
+        $items = DoubanMovieSearchApi::search_subjects($params, $args);
+
+        set_transient($transient, $items, 24 * HOUR_IN_SECONDS);
+    }
+
+    return $items;
 }
