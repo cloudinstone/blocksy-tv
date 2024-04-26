@@ -13,6 +13,10 @@ class Theme {
     public static function enqueue() {
         wp_enqueue_style('blocksy-wptv', get_stylesheet_directory_uri() . '/build/css/theme.css');
         wp_enqueue_script('blocksy-wptv', get_stylesheet_directory_uri() . '/build/js/theme.js', [], false, ['in_footer' => false]);
+
+        wp_localize_script('blocksy-wptv', 'themeSettings', [
+            'ajaxUrl' => admin_url('admin-ajax.php')
+        ]);
     }
 
     public static function post_thumbnail_html($html, $post_id, $post_thumbnail_id, $size, $attr) {

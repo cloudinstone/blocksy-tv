@@ -1,0 +1,65 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "6ba4c7125919d3b7680eb2cb0732f1d4",
+    "packages": [
+        {
+            "name": "dresspress/php-chinese-number",
+            "version": "0.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dresspress/php-chinese-number.git",
+                "reference": "913c64aa471a98826b41c96d3246a62babab1503"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dresspress/php-chinese-number/zipball/913c64aa471a98826b41c96d3246a62babab1503",
+                "reference": "913c64aa471a98826b41c96d3246a62babab1503",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DressPress\\ChineseNumber\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "DressPress",
+                    "email": "nobody@nospam.com"
+                }
+            ],
+            "description": "PHP阿拉伯数字和中文数字的相互转换。",
+            "homepage": "https://github.com/dresspress/php-chinese-number",
+            "keywords": [
+                "Chinese",
+                "number",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/dresspress/php-chinese-number",
+                "source": "https://github.com/dresspress/php-chinese-number"
+            },
+            "time": "2024-04-25T12:07:32+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.3.0"
+}

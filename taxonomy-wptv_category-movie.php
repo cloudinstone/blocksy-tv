@@ -13,25 +13,27 @@ get_header(); ?>
     <section>
         <h2>正在热映</h2>
 
-        <div class="item-loop">
-            <?php
+        <div class="scrollable-container">
+            <div class="item-loop scrollable-list">
+                <?php
 
-            // $items = wptv_get_douban_upcoming_to_theaters();
+                // $items = wptv_get_douban_upcoming_to_theaters();
 
-            $douban_items = wptv_get_douban_nowplaying_in_theaters();
+                $douban_items = wptv_get_douban_nowplaying_in_theaters();
 
-            $douban_ids = array_map(function ($item) {
-                return $item['id'];
-            }, $douban_items);
+                $douban_ids = array_map(function ($item) {
+                    return $item['id'];
+                }, $douban_items);
 
-            $posts = wptv_get_items_by_douban_ids($douban_ids, [
-                'posts_per_page' => 8
-            ]);
+                $posts = wptv_get_items_by_douban_ids($douban_ids, [
+                    'posts_per_page' => 24
+                ]);
 
-            foreach ($posts as $post) {
-                get_template_part('template-parts/item');
-            }
-            ?>
+                foreach ($posts as $post) {
+                    get_template_part('template-parts/item');
+                }
+                ?>
+            </div>
         </div>
     </section>
 

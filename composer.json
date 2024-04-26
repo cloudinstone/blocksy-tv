@@ -1,0 +1,5 @@
+{
+    "require": {
+        "dresspress/php-chinese-number": "^0.0.4"
+    }
+}

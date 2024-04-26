@@ -11,94 +11,93 @@
 use WPTVCore\DoubanMovieSubjectParser;
 use Brick\Schema\SchemaReader;
 use Overtrue\Pinyin\Pinyin;
+use WPTVCore\ChatAnywhereApi;
 use WPTVCore\DataCleaner;
 use WPTVCore\DoubanBookSubjectParser;
 use WPTVCore\DoubanMoviePageParser;
 use WPTVCore\Helpers;
+use WPTVCore\SourceListParser;
+use WPTVCore\SourceProviderInspector;
+use WPTVCore\VodItemDataSanitizer;
+use WPTVTheme\VodItemHelper;
 
 get_header();
 
 
+global $post;
 
-
-
-// DataCleaner::delete_unpopular_terms('wptv_director');
-
-
+set_time_limit(0);
 
 
 
 
-// $id = '36514643';
 
-// $parser = new DoubanBookSubjectParser($id);
-// $data = $parser->get_data();
+// DataCleaner::delete_unpopular_terms('wptv_lang', 1);
 
-// var_dump($data);
+// $lang_json = file_get_contents(WPTV_CORE_PATH . 'data/languages.json');
+// $langs = json_decode($lang_json);
+
+// $lang_names = [];
+// foreach ($langs as $lang) {
+//     $lang_names[$lang->eng] = $lang->zho;
+// }
+
+// var_dump($lang_names);
+
+$meta_query = [
+    // 'relation' => 'AND',
+    // [
+    //     'taxonomy' => 'wptv_year',
+    //     'operator' => 'NOT EXISTS'
+    // ],
+    // [
+    //     'key' => 'douban_id',
+    //     'compare' => '!=',
+    //     'value' => ''
+    // ]
+];
+
+
+
+$terms = get_terms([
+    'taxonomy' => 'wptv_provider',
+    'hide_empty' => false,
+    'meta_key' => 'status',
+    'meta_value' => 'publish'
+]);
+
+foreach ($terms as $term) {
+    $api_url = get_term_meta($term->term_id, 'api_url', true);
+    $inspector = new SourceProviderInspector($api_url);
+    // $results = $inspector->test_search('周处除三害');
+
+    // echo '<h2>' . $term->name . '</h2>';
+
+    // if (is_wp_error($results))
+    //     var_dump($results);
+    // else {
+    //     var_dump($results);
+    //     printf('<a href="%1$s">%1$s</a>', $results['test_url']);
+    // }
+}
+
+
+
 // die;
-
-// $id  = '35736202';
-
-// $parser = new DoubanMovieSubjectParser($id);
-// $data = $parser->get_data();
-
-// var_dump($data);
-
-
-// $query = new WP_Query([
-//     'post_type' => 'wptv_post',
-//     'tax_query' => [
-//         [
-//             'taxonomy' => 'wptv_category',
-//             'terms' => ['recap'],
-//             'field' => 'slug'
-//         ]
-//     ],
-//     'meta_query' => [
-//         [
-//             'key' => 'douban_id',
-//             'compare' => 'EXISTS'
-//         ]
-//     ]
-// ]);
-
-// var_dump($query->found_posts);
-
-
 
 $provider_id = (int)get_query_var('provider');
 
 $episode = (int)get_query_var('episode');
 
+$sources = wptv_get_vod_source_list($post->ID, 'string');
 
-$sources = wptv_vod_get_source_urls($post->ID);
-
-
-echo '<ul class="m3u8-urls">';
-foreach ($sources as $group) {
-    $provider = get_term($group['provider_id'], 'wptv_provider');
-
-    $first_url = $group['srclist'][0]['url'];
-
-    printf('<li>%s: <a title="%s" href="%s">%s</a></li>', $provider->name, $provider->name, $first_url, $first_url);
-    // $content = file_get_contents($first_url);
-    // var_dump($content);
-}
-echo '</ul>';
 
 
 $first = reset($sources);
 
-// var_dump($first);
-
 $provider_id = $first['provider_id'];
 
 $episode = 1;
-
-
-
-
-
 ?>
 
 <div class="ct-container">
@@ -106,53 +105,165 @@ $episode = 1;
     <?php while (have_posts()) : the_post();
         global $post;
 
-        var_dump($post);
-
-
-        // var_dump($sources);
-
-        $src = $sources[$provider_id]['src_set'][$episode - 1];
-
-        // var_dump($src);
-
-        // $src['url'] = 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-        // echo do_shortcode('[video src="' . $src['url'] . '"]');
+        $src = $sources[$provider_id]['srcset'][$episode - 1];
     ?>
+
+        <template id="source-list-item">
+            <li>
+                <span class="name"></span>
+                <span class="episode-count"></span>
+                <span class="speed"></span>
+            </li>
+        </template>
+
+        <template id="episode-list-item">
+            <li>
+                <span class="name"></span>
+            </li>
+        </template>
+
 
 
         <div class="play-container">
             <div class="player-area">
                 <div class="player">
-                    <video id="video" data-src="<?php echo $src['url']; ?>" controls></video>
+                    <video id="video" src="" controls></video>
+                </div>
 
+                <div class="player-toolbar">
+                    <button type="button" class="button mark-intro-end-time">标记当前视频时间为片头结束时间</button>
                 </div>
             </div>
 
-
-
             <div class="info-area">
 
-                <h1 class="entry-title">
-                    <?php the_title(); ?>
-                    <?php echo get_the_term_list($post->ID, 'wptv_year'); ?>
-                </h1>
-
-                <mark><?php echo get_post_meta($post->ID, 'remarks', true); ?></mark>
-
                 <?php
-                // var_dump($post);
-                $douban_id = get_post_meta($post->ID, 'douban_id', true);
-                // var_dump($douban_id);
-                if ($douban_id) {
-                    printf('<a href="%s">%s</a>', 'https://movie.douban.com/subject/' . $douban_id . '/', __('豆瓣', 'wptv'));
-                }
+                $season_posts = find_season_posts_by_title($post->post_title);
 
-                echo $post->douban_score;
+                echo '<select class="select-season" name="season">';
+                echo '<option value="">' . __('选择该剧集的其它季', 'wptv') . '</option>';
+                foreach ($season_posts as $season_post) {
+                    echo '<option value="' . esc_url(get_permalink($season_post->ID)) . '"' . selected($post->ID, $season_post->ID, false) . '>' . $season_post->post_title . '</option>';
+                }
+                echo '</select>';
                 ?>
 
 
+                <div class="source-area" data-post-id="<?php echo $post->ID; ?>">
+                    <div class="source-notice"></div>
+
+                    <div class="source-list-container">
+                        <ul class="source-list">
+                        </ul>
+                    </div>
+
+                    <div class="episode-list-container">
+                        <ul class="episode-list" hidden>
+                        </ul>
+                    </div>
+                </div>
+
+
+                <div class="item-header">
+                    <div class="thumbnail">
+                        <?php the_post_thumbnail(); ?>
+                    </div>
+
+
+                    <div class="info">
+                        <h1 class="title">
+                            <?php the_title(); ?>
+                            <?php echo get_the_term_list($post->ID, 'wptv_year'); ?>
+                        </h1>
+
+                        <?php
+                        $aka =  get_post_meta($post->ID, 'aka', true);
+                        if ($aka) {
+                            $aka = html_entity_decode($aka);
+                            echo ' <h2 class="subtitle">' . $aka . '</h2>';
+                        }
+                        ?>
+
+                        <?php
+
+                        echo VodItemHelper::get_remark_html($post);
+
+                        ?>
+
+                        <span class="item-rating">
+                            <?php
+                            $douban_id = get_post_meta($post->ID, 'douban_id', true);
+
+                            if ($douban_id) {
+                                printf(
+                                    '<a href="%s">%s</a> <span>%s</span>',
+                                    'https://movie.douban.com/subject/' . $douban_id . '/',
+                                    __('豆瓣评分', 'wptv'),
+                                    get_post_meta($post->ID, 'douban_score', true)
+                                );
+                            }
+                            ?>
+                        </span>
+                    </div>
+                </div>
+
 
                 <?php
+                $related_posts = null;
+
+                $related_posts = yarpp_get_related([
+                    'limit' => 12
+                ]);
+
+                // $cat_terms = get_the_terms($post->ID, 'wptv_category');
+
+                // if (!empty($cat_terms)) {
+                //     if ($cat_terms[0]->parent) {
+                //         $parent_term = get_term($cat_terms[0]->parent, 'wptv_category');
+                //     } else {
+                //         $parent_term = $cat_terms[0];
+                //     }
+
+                //     $type = $parent_term->name; // 电影|电视剧|综艺
+
+                //     delete_post_meta($post->ID, 'ai_related_douban_ids');
+                //     $douban_ids = get_post_meta($post->ID, 'ai_related_douban_ids', true);
+                //     if (empty($douban_ids)) {
+                //         $api = new ChatAnywhereApi();
+                //         $douban_ids = $api->get_related_douban_ids($post->post_title, $type);
+
+                //         if (!empty($douban_ids)) {
+                //             update_post_meta($post->ID, 'ai_related_douban_ids', $douban_ids);
+                //         }
+                //     }
+
+                //     if (!empty($douban_ids)) {
+                //         $douban_ids = explode(',', $douban_ids);
+
+                //         $related_posts = wptv_get_items_by_douban_ids($douban_ids, [
+                //             'posts_per_page' => 24
+                //         ]);
+                //     }
+                // }
+
+
+
+
+
+                if ($related_posts) {
+                    echo '<div class="related-items" data-layout="list">';
+                    foreach ($related_posts as $post) {
+                        get_template_part('template-parts/item');
+                    }
+                    wp_reset_query();
+                    echo '</div>';
+                }
+
+
+
+
+
+
 
                 $tabs = [
                     'sources' => __('选集', 'wptv'),
@@ -171,15 +282,13 @@ $episode = 1;
 
                 <div class="content-panel" id="sources-panel" role="tabpanel" aria-labelledby="sources-tab">
                     <?php
-                    wptv_vod_source_urls($post->ID);
+                    wptv_vod_source_list($post->ID);
                     ?>
                 </div>
 
                 <div class="content-panel" id="details-panel" role="tabpanel" aria-labelledby="details-tab" hidden>
 
-                    <div class="thumbnail">
-                        <?php the_post_thumbnail(); ?>
-                    </div>
+
 
 
 
@@ -199,7 +308,7 @@ $episode = 1;
 
                         wptv_vod_attr_row('pubdate', __('上映日期', 'wptv'), 'post_meta');
                         wptv_vod_attr_row('duration', __('片长', 'wptv'), 'post_meta');
-                        wptv_vod_attr_row('aka_names', __('又名', 'wptv'), 'post_meta');
+                        wptv_vod_attr_row('aka', __('又名', 'wptv'), 'post_meta');
 
 
                         echo '</br>';
