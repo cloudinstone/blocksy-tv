@@ -1,3 +1,5 @@
+@use 'dplayer-extend';
+
 // @link https://css-tricks.com/an-auto-filling-css-grid-with-max-columns/
 /* Adjusted columns width */
 @mixin grid-cols-adjusted($min-cols, $max-cols, $cols-min-width, $row-gap: 0px, $col-gap: 0px) {
@@ -26,7 +28,31 @@
 }
 
 :root {
-    --theme-image-border-radius: 8px;
+    --theme-image-border-radius: 1rem;
+}
+
+.site-title {
+    a {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+
+        &:before {
+            content: '';
+            display: inline-block;
+            width: 3rem;
+            height: 3rem;
+            background: url(../../assets/images/icon.png) no-repeat center center;
+            background-size: cover;
+            transition: .3s background-image;
+        }
+
+        &:hover:before {
+            background: url(../../assets/images/icon-active.png) no-repeat center center;
+            background-size: cover;
+        }
+
+    }
 }
 
 .player-area {
@@ -146,10 +172,14 @@
     $row-gap: 1rem;
     $col-gap: 1rem;
 
-    @include grid-cols-adjusted($min-cols, $max-cols, $cols-min-width, $row-gap, $col-gap);
+    // @include grid-cols-adjusted($min-cols, $max-cols, $cols-min-width, $row-gap, $col-gap);
 
     h2 {
         font-size: 1rem;
+    }
+
+    .ct-media-container {
+        border-radius: 8px;
     }
 }
 
@@ -358,6 +388,57 @@
                 a {
                     color: #000;
                 }
+            }
+        }
+    }
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.filter-group {
+
+    &__header {
+        white-space: nowrap;
+
+        padding: 4px 0;
+        border: 1px solid transparent;
+    }
+
+    &__body {
+        overflow: hidden;
+        overflow-x: scroll;
+
+        @include hide-scrollbar();
+    }
+
+    &__list {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 0;
+        margin-bottom: 0;
+
+        a {
+            display: inline-block;
+            padding: 4px 1rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            white-space: nowrap;
+
+            color: #444;
+
+            &:hover {
+                color: #7f5700;
+            }
+
+            &.active {
+                background: #f2e0c9;
+                color: #7f5700;
             }
         }
     }

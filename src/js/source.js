@@ -1,5 +1,7 @@
 import Cookies from 'js-cookie';
 import Dexie from 'dexie';
+import DPlayer from 'dplayer';
+import DPlayerExtend from './dplayer-extend';
 
 class Source {
     video;
@@ -14,9 +16,12 @@ class Source {
     episodeListEl;
     introEndTime = 0;
     noticeEl;
+    historyItem;
 
     constructor() {
-        this.postId = parseInt(document.querySelector('.source-area').dataset.postId);
+        let sourceArea = document.querySelector('.source-area');
+
+        this.postId = parseInt(sourceArea.dataset.postId);
         this.video = document.getElementById("video");
         this.sourceListEl = document.querySelector('.source-list')
         this.episodeListEl = document.querySelector('.episode-list')
@@ -43,57 +48,26 @@ class Source {
 
             this.markIntroEndTime(this.video.currentTime)
         });
-
-        this.syncIntroEndTime();
     }
 
     init() {
         this.load();
     }
 
-    async syncIntroEndTime() {
-        const db = this.idb;
-        const historyItem = await db.watch_history_items.where({ post_id: this.postId }).first();
-
-        if (historyItem) {
-            this.introEndTime = historyItem.intro_end_time;
-        }
-    }
-
-    async markIntroEndTime(introEndTime) {
-
-        const db = this.idb;
-        const historyItem = await db.watch_history_items.where({ post_id: this.postId }).first();
-
-        console.log('markIntroEndTime', historyItem);
-
-        if (historyItem) {
-            db.watch_history_items.update(historyItem.id, {
-                intro_end_time: introEndTime
-            })
-
-            this.introEndTime = introEndTime
-        }
-    }
-
     async load() {
         this.sourceList = await this.fetchSourceList();
-
-        console.log('fetchSourceList', this.sourceList);
-
-
+        console.log('Fetch资源列表', this.sourceList);
 
         const db = this.idb;
-        const historyItems = await db.watch_history_items
-            .where({
-                post_id: this.postId
-            })
-            .toArray();
 
-        console.log('加载前查询用户的History Items', historyItems);
+        const historyItem = await db.watch_history_items.where({ post_id: this.postId }).first();
+        this.historyItem = historyItem;
+        console.log('加载前查询用户的History Item', historyItem);
 
-        if (historyItems.length) {
-            let historyItem = historyItems[0];
+        if (historyItem) {
+            if (historyItem.intro_end_time) {
+                this.introEndTime = historyItem.intro_end_time;
+            }
 
             this.currentEpisodeIndex = historyItem.episode_index;
 
@@ -111,21 +85,37 @@ class Source {
             this.video.currentTime = historyItem.exit_time;
 
         } else {
+
             this.renderSourceList();
             this.testAllSources();
         }
-
-
 
         window.addEventListener("beforeunload", (e) => {
             // console.log('beforeunload')
 
             this.onBeforeunload();
         });
-
-
-
     }
+
+
+
+    async markIntroEndTime(introEndTime) {
+
+        const db = this.idb;
+        const historyItem = await db.watch_history_items.where({ post_id: this.postId }).first();
+
+        console.log('markIntroEndTime', historyItem);
+
+        if (historyItem) {
+            db.watch_history_items.update(historyItem.id, {
+                intro_end_time: introEndTime
+            })
+
+            this.introEndTime = introEndTime
+        }
+    }
+
+
 
     getSourceBySlug(slug) {
         return this.sourceList.find(source => source.provider_slug == slug);
@@ -335,6 +325,7 @@ class Source {
 
         // this.playM3u8(url)
 
+        console.log(this.introEndTime);
 
 
         this.playSourceEpisode(this.currentSource, episodeIndex);
@@ -429,8 +420,57 @@ class Source {
         }
     }
 
-
     playM3u8(url) {
+        this.dplayer(url);
+    }
+
+
+    dplayer(url) {
+        const container = document.getElementById('player');
+        const dp = new DPlayer({
+            container: container,
+            screenshot: true,
+            video: {
+                url: url,
+                type: 'hls',
+            },
+            pluginOptions: {
+                hls: {
+                    // hls config
+                },
+            },
+            contextmenu: [
+                {
+                    text: 'custom1',
+                    link: 'https://github.com/DIYgod/DPlayer',
+                },
+                {
+                    text: 'custom2',
+                    click: (player) => {
+                        console.log(player);
+                    },
+                },
+            ],
+        });
+
+        dp.play();
+
+        new DPlayerExtend(dp)
+
+        dp.on('introtime_change', time => {
+            console.log('introtime_change', time)
+        })
+        dp.on('outrotime_change', time => {
+            console.log('outrotime_change', time)
+        })
+
+
+
+    }
+
+    html5(url) {
+
+
         const video = this.video;
         const m3u8Url = decodeURIComponent(url);
 

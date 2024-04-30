@@ -1,10 +1,11 @@
 <?php
 
 /**
- * Template Name: Sections
+ * Template Name: Home Sports
  */
 
 use WPTVCore\DoubanMovieSearchApi;
+use WPTVCore\VodItemDataSanitizer;
 
 get_header();
 
@@ -63,41 +64,7 @@ var_dump($paged);
                 foreach ($posts as $post) {
                     $title = get_the_title();
 
-
-                    // 日期数字前加空格，有的标题没有空格
-                    $title = preg_replace('/\d{4,}/', " $0", $title);
-                    // $title = trim($title);
-
-                    $data = [];
-
-                    preg_match('/([^ ]+)vs([^ ]+)/i', $title, $vs_match);
-                    if ($vs_match) {
-                        $data['home'] = $vs_match[1];
-                        $data['away'] = $vs_match[2];
-                    }
-
-                    $year = $month = $day = '';
-                    preg_match('/(\d{4})(\d{2})(\d{2})/i', $title, $date_match);
-                    if ($date_match) {
-                        $year = $date_match[1];
-                        $month = $date_match[2];
-                        $day = $date_match[3];
-                    } else {
-                        preg_match('/(\d{1,2})月(\d{1,2})日/i', $title, $date_match);
-
-                        if ($date_match) {
-                            $month = $date_match[1];
-                            $day = $date_match[2];
-                        }
-
-                        preg_match('/(\d{4})/i', $title, $year_match);
-                        $year = $year_match ? $year_match[1] : '';
-                    }
-
-                    $data['date'] = implode('-', array_filter([$year, $month, $day]));
-
-
-
+                    $data = VodItemDataSanitizer::parse_sports_title($title);
 
                     echo '<div>' . $title . '</div>';
 

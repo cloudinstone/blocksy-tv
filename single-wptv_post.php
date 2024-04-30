@@ -18,69 +18,21 @@ use WPTVCore\DoubanMoviePageParser;
 use WPTVCore\Helpers;
 use WPTVCore\SourceListParser;
 use WPTVCore\SourceProviderInspector;
+use WPTVCore\Test;
 use WPTVCore\VodItemDataSanitizer;
 use WPTVTheme\VodItemHelper;
 
 get_header();
 
 
+
 global $post;
 
+
+
+
+
 set_time_limit(0);
-
-
-
-
-
-// DataCleaner::delete_unpopular_terms('wptv_lang', 1);
-
-// $lang_json = file_get_contents(WPTV_CORE_PATH . 'data/languages.json');
-// $langs = json_decode($lang_json);
-
-// $lang_names = [];
-// foreach ($langs as $lang) {
-//     $lang_names[$lang->eng] = $lang->zho;
-// }
-
-// var_dump($lang_names);
-
-$meta_query = [
-    // 'relation' => 'AND',
-    // [
-    //     'taxonomy' => 'wptv_year',
-    //     'operator' => 'NOT EXISTS'
-    // ],
-    // [
-    //     'key' => 'douban_id',
-    //     'compare' => '!=',
-    //     'value' => ''
-    // ]
-];
-
-
-
-$terms = get_terms([
-    'taxonomy' => 'wptv_provider',
-    'hide_empty' => false,
-    'meta_key' => 'status',
-    'meta_value' => 'publish'
-]);
-
-foreach ($terms as $term) {
-    $api_url = get_term_meta($term->term_id, 'api_url', true);
-    $inspector = new SourceProviderInspector($api_url);
-    // $results = $inspector->test_search('周处除三害');
-
-    // echo '<h2>' . $term->name . '</h2>';
-
-    // if (is_wp_error($results))
-    //     var_dump($results);
-    // else {
-    //     var_dump($results);
-    //     printf('<a href="%1$s">%1$s</a>', $results['test_url']);
-    // }
-}
-
 
 
 // die;
@@ -126,7 +78,7 @@ $episode = 1;
 
         <div class="play-container">
             <div class="player-area">
-                <div class="player">
+                <div id="player">
                     <video id="video" src="" controls></video>
                 </div>
 
@@ -169,12 +121,14 @@ $episode = 1;
                         <?php the_post_thumbnail(); ?>
                     </div>
 
-
                     <div class="info">
                         <h1 class="title">
                             <?php the_title(); ?>
                             <?php echo get_the_term_list($post->ID, 'wptv_year'); ?>
+
+
                         </h1>
+
 
                         <?php
                         $aka =  get_post_meta($post->ID, 'aka', true);
@@ -183,6 +137,8 @@ $episode = 1;
                             echo ' <h2 class="subtitle">' . $aka . '</h2>';
                         }
                         ?>
+
+                        <?php echo get_the_term_list($post->ID, 'wptv_category'); ?>
 
                         <?php
 
@@ -302,8 +258,8 @@ $episode = 1;
                         wptv_vod_attr_row('writers', __('编剧', 'wptv'), 'post_meta');
                         wptv_vod_attr_row('actors', __('主演', 'wptv'), 'post_meta');
 
-                        wptv_vod_attr_row('wptv_category', __('类型', 'wptv'), 'term');
-                        wptv_vod_attr_row('wptv_area', __('地区', 'wptv'), 'term');
+                        wptv_vod_attr_row('wptv_genre', __('类型', 'wptv'), 'term');
+                        wptv_vod_attr_row('wptv_region', __('地区', 'wptv'), 'term');
                         wptv_vod_attr_row('wptv_lang', __('语言', 'wptv'), 'term');
 
                         wptv_vod_attr_row('pubdate', __('上映日期', 'wptv'), 'post_meta');

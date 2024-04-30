@@ -58,12 +58,24 @@ function checkSource(url) {
 }
 
 
+
 import Source from './source';
+
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    const source = new Source(list);
-    source.init();
+
+    let sourceArea = document.querySelector('.source-area');
+
+    if (sourceArea) {
+        const source = new Source(list);
+        source.init();
+
+        window.wptvSource = source;
+    }
+
+
+
 
 
 
@@ -72,16 +84,20 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     let tabs = document.querySelector('.content-tabs');
 
-    tabs.addEventListener('change', (event) => {
-        let activeTab = event.target.activeTab;
+    if (tabs) {
+        tabs.addEventListener('change', (event) => {
+            let activeTab = event.target.activeTab;
 
-        let targetPanelId = activeTab.getAttribute('aria-controls');
+            let targetPanelId = activeTab.getAttribute('aria-controls');
 
-        document.querySelectorAll('.info-area [role="tabpanel"]').forEach(panel => {
-            panel.hidden = panel.id !== targetPanelId;
+            document.querySelectorAll('.info-area [role="tabpanel"]').forEach(panel => {
+                panel.hidden = panel.id !== targetPanelId;
+            });
+
         });
+    }
 
-    });
+
 
 
 });

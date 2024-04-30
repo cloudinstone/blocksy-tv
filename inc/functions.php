@@ -51,7 +51,7 @@ function find_season_posts_by_title($title) {
     }
 
     usort($season_posts, function ($a, $b) {
-        return $a->season_number > $b->season_number;
+        return $a->season_number - $b->season_number;
     });
 
     wp_reset_query();
@@ -170,34 +170,44 @@ function wptv_vod_source_list($post_id) {
         $api_url = get_term_meta($provider->term_id, 'api_url', true);
 
 
-        if ($group['srcid']) {
+        if (!empty($group['srcid'])) {
             $api_url = add_query_arg(['ac' => 'detail', 'ids' => $group['srcid']], $api_url);
         } else {
             $api_url = add_query_arg(['ac' => 'detail', 'wd' => get_the_title($post_id)], $api_url);
         }
 
 
-
-
         $api_url = get_rest_url(null, 'wptv/v1/view_json?url=' . urlencode($api_url));
 
+        $site_link = '<a href="' . get_term_meta($provider->term_id, 'site_url', true) . '">网站</a>';
         $api_link = '<a href="' . $api_url . '">API</a>';
 
 
 
         $reimport_url = 'http://hdzy.local/wp-admin/admin.php?page=wptv-import';
-        $reimport_url = add_query_arg([
-            'provider_id' => $provider->term_id,
-            'keyword' => get_the_title($post_id),
-            'redirect' => 0
-        ], $reimport_url);
+
+
+
+        if (!empty($group['srcid'])) {
+            $reimport_url = add_query_arg([
+                'provider_id' => $provider->term_id,
+                'src_ids' => $group['srcid'],
+                'redirect' => 0
+            ], $reimport_url);
+        } else {
+            $reimport_url = add_query_arg([
+                'provider_id' => $provider->term_id,
+                'keyword' => get_the_title($post_id),
+                'redirect' => 0
+            ], $reimport_url);
+        }
 
         $reimport_link = '<a href="' . $reimport_url . '">重新导入</a>';
 
         echo '<div class="play-url-group">';
 
         echo '<div class="group-header">';
-        echo '<h4>' . $provider->name .  $api_link . $reimport_link . '</h4>';
+        echo '<h4>' . $provider->name .  $site_link . $api_link . $reimport_link . '</h4>';
         echo '</div>';
 
         echo '<div class="group-body">';
@@ -245,7 +255,7 @@ function wptv_get_items_by_douban_ids($douban_ids, $args = [], $sort_by_douban_i
 
     if ($sort_by_douban_ids) {
         usort($posts, function ($a, $b) use ($douban_ids) {
-            return array_search($a->douban_id, $douban_ids) > array_search($b->douban_id, $douban_ids);
+            return array_search($a->douban_id, $douban_ids) - array_search($b->douban_id, $douban_ids);
         });
     }
 

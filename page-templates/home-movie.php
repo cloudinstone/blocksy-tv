@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Template Name: Sections
+ * Template Name: Home Movie
  */
 
 use WPTVCore\DoubanMovieSearchApi;

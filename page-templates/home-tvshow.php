@@ -1,23 +1,16 @@
 <?php
 
-
-use WPTVCore\DoubanMovieSearchApi;
+/**
+ * Template Name: Home TVShow
+ */
 
 get_header(); ?>
 
 <div class="ct-container">
 
-
     <?php
     $tags = [
-        '热门',
-        '国产剧',
-        // '综艺',
-        '美剧',
-        '日剧',
-        '韩剧',
-        '日本动画',
-        '纪录片'
+        '综艺',
     ];
 
     foreach ($tags as $tag) {
@@ -48,8 +41,6 @@ get_header(); ?>
 
 
         echo '<div class="item-loop">';
-
-
         /**
          * 一个豆瓣ID可能对应多篇文章，每个豆瓣ID仅显示一篇对应的文章
          */
@@ -77,49 +68,14 @@ get_header(); ?>
     ?>
 
 
-    <?php
+    <div class="item-loop">
+        <?php while (have_posts()) : the_post(); ?>
 
-    $tags = [
-        'Netflix',
-        'HBO',
-        'Disney+'
-    ];
+            <?php get_template_part('template-parts/item'); ?>
 
-    foreach ($tags as $tag) {
-    ?>
-        <section>
-            <h2><?php echo $tag; ?></h2>
+        <?php endwhile; ?>
 
-            <div class="item-loop">
-                <?php
-
-                $args = [
-                    'post_type' => 'wptv_post',
-                    'posts_per_page' => 24,
-                    's' => $tag,
-                    'meta_key' => 'douban_score',
-                    'orderby' => 'meta_value_num',
-                    'tax_query' => [
-                        [
-                            'taxonomy' => 'wptv_category',
-                            'terms' => ['电视剧'],
-                            'field' => 'name'
-                        ]
-                    ]
-                ];
-                $posts = get_posts($args);
-
-                foreach ($posts as $post) {
-                    get_template_part('template-parts/item');
-                }
-                ?>
-            </div>
-        </section>
-
-    <?php } ?>
-
-
-
+    </div>
 
 </div>
 
