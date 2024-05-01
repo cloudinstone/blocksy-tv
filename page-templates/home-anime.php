@@ -34,7 +34,7 @@ get_header(); ?>
 
 
         $posts = get_posts([
-            'post_type' => 'wptv_post',
+            'post_type' => 'wptv_video',
             'posts_per_page' => 24,
             'tax_query' => [
                 [

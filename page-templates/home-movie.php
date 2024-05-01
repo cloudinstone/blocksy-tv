@@ -9,39 +9,13 @@ use WPTVCore\DoubanMovieSearchApi;
 get_header(); ?>
 
 <div class="ct-container">
-
-    <section>
-        <h2>正在热映</h2>
-
-        <div class="scrollable-container">
-            <div class="item-loop scrollable-list">
-                <?php
-
-                // $items = wptv_get_douban_upcoming_to_theaters();
-
-                $douban_items = wptv_get_douban_nowplaying_in_theaters();
-
-                $douban_ids = array_map(function ($item) {
-                    return $item['id'];
-                }, $douban_items);
-
-                $posts = wptv_get_items_by_douban_ids($douban_ids, [
-                    'posts_per_page' => 24
-                ]);
-
-                foreach ($posts as $post) {
-                    get_template_part('template-parts/item');
-                }
-                ?>
-            </div>
-        </div>
-    </section>
-
-
-
-
-
     <?php
+    get_template_part('template-parts/section-douban-items', null, [
+        'title' => __('正在热映', 'wptv'),
+        'transient' => 'douban_nowplaying_movies_post_ids',
+        'douban_items' =>  wptv_get_douban_nowplaying_in_theaters()
+    ]);
+
     $tags = [
         '热门',
         '最新',
@@ -53,50 +27,28 @@ get_header(); ?>
     ];
 
     foreach ($tags as $tag) {
-        echo ' <section>';
-
-        echo '<h2>' . $tag . '</h2>';
-
-
-
         $query_args = [
             'tag' => $tag,
-            'page_limit' => 24
+            'page_limit' => 50
         ];
         $query = http_build_query($query_args);
-        $cache_key = base64_encode($query);
+        $cache_key = md5($query);
 
-        $douban_items = wptv_douban_search_subjects('douban_subjects_' . $cache_key, $query_args);
-
-        $douban_ids = array_map(function ($item) {
-            return $item['id'];
-        }, $douban_items);
-
-        $posts = wptv_get_items_by_douban_ids($douban_ids, [
-            'posts_per_page' => 24
-        ]);
-
-
-        echo '<div class="item-loop">';
-
-
-        foreach ($posts as $post) {
-            get_template_part('template-parts/item');
+        $transient = 'douban_search_subjects_' . $cache_key;
+        $douban_items = get_transient($transient);
+        if (!$douban_items) {
+            $douban_items  = DoubanMovieSearchApi::search_subjects($query_args);
+            set_transient($transient, $douban_items);
         }
 
-        echo '</div>';
+        $transient = 'douban_search_subjects_post_ids_' . $cache_key;
 
-        echo '</section>';
-    }
-
-    ?>
-
-
-
-
-
-
-
+        get_template_part('template-parts/section-douban-items', null, [
+            'title' => $tag,
+            'transient' => $transient,
+            'douban_items' =>  $douban_items,
+        ]);
+    } ?>
 </div>
 
 <?php get_footer();

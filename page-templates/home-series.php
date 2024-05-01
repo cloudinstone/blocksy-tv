@@ -102,7 +102,7 @@ get_header();
                 <?php
 
                 $args = [
-                    'post_type' => 'wptv_post',
+                    'post_type' => 'wptv_video',
                     'posts_per_page' => 24,
                     's' => $tag,
                     'meta_key' => 'douban_score',

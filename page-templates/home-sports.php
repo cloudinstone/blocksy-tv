@@ -48,7 +48,7 @@ var_dump($paged);
                 <?php
 
                 $args = [
-                    'post_type' => 'wptv_post',
+                    'post_type' => 'wptv_video',
                     'posts_per_page' => 24,
                     's' => $search_term,
                     'tax_query' => [
@@ -92,7 +92,7 @@ var_dump($paged);
             <?php
 
             $args = [
-                'post_type' => 'wptv_post',
+                'post_type' => 'wptv_video',
                 'posts_per_page' => 120,
                 'tax_query' => [
                     [

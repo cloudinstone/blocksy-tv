@@ -12,5 +12,10 @@
         }
         echo   '/' . get_post_meta($post->ID, 'douban_score', true);
         ?>
+
+        <div>
+            <?php echo get_post_meta($post->ID, 'pubdate', true); ?>
+        </div>
+
     </div>
 </div>

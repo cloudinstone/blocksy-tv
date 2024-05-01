@@ -28,7 +28,7 @@ function find_season_posts_by_title($title) {
         return [];
 
     $args = [
-        'post_type' => 'wptv_post',
+        'post_type' => 'wptv_video',
         'search_title' => $season_data['series_name'],
         // 'suppress_filters' => true,
         'ignore_sticky_posts' => true,
@@ -148,9 +148,9 @@ function wptv_vod_source_list($post_id) {
             $class = 'current';
         }
         if (!empty($group['provider_id']))
-            $provider = get_term_by('id', $group['provider_id'], 'wptv_provider');
+            $provider = get_term_by('id', $group['provider_id'], 'wptv_source');
         elseif (!empty($group['provider']))
-            $provider = get_term_by('slug', $group['provider'], 'wptv_provider');
+            $provider = get_term_by('slug', $group['provider'], 'wptv_source');
 
 
 
@@ -161,9 +161,9 @@ function wptv_vod_source_list($post_id) {
 
     foreach ($groups as $i => $group) {
         if (!empty($group['provider_id']))
-            $provider = get_term_by('id', $group['provider_id'], 'wptv_provider');
+            $provider = get_term_by('id', $group['provider_id'], 'wptv_source');
         elseif (!empty($group['provider']))
-            $provider = get_term_by('slug', $group['provider'], 'wptv_provider');
+            $provider = get_term_by('slug', $group['provider'], 'wptv_source');
 
         // var_dump($provider);
 
@@ -241,7 +241,7 @@ function get_play_url($post_id, $provider_id, $index) {
 
 function wptv_get_items_by_douban_ids($douban_ids, $args = [], $sort_by_douban_ids = true) {
     $args = array_merge([
-        'post_type' => 'wptv_post',
+        'post_type' => 'wptv_video',
         'posts_per_page' => 100,
         'meta_query' => [
             [
@@ -249,15 +249,11 @@ function wptv_get_items_by_douban_ids($douban_ids, $args = [], $sort_by_douban_i
                 'compare' => 'IN',
                 'value' => $douban_ids
             ]
-        ]
+        ],
+        'fields' => 'ids',
     ], $args);
-    $posts = get_posts($args);
 
-    if ($sort_by_douban_ids) {
-        usort($posts, function ($a, $b) use ($douban_ids) {
-            return array_search($a->douban_id, $douban_ids) - array_search($b->douban_id, $douban_ids);
-        });
-    }
+    $posts = get_posts($args);
 
     return $posts;
 }
@@ -279,11 +275,11 @@ function wptv_get_douban_upcoming_to_theaters() {
 function wptv_get_douban_nowplaying_in_theaters() {
     $transient = 'douban_nowplaying_movies';
 
+    // delete_transient($transient);
     $items = get_transient($transient);
 
     if (empty($items)) {
         $items = DoubanMoviePageParser::get_nowplaying_in_theaters();
-
         set_transient($transient, $items, 24 * HOUR_IN_SECONDS);
     }
 
@@ -298,6 +294,8 @@ function wptv_douban_search_subjects($transient, $params = [], $args = []) {
 
     if (empty($items)) {
         $items = DoubanMovieSearchApi::search_subjects($params, $args);
+
+        var_dump($items);
 
         if (!is_array($items))
             return;

@@ -124,10 +124,13 @@ $episode = 1;
                     <div class="info">
                         <h1 class="title">
                             <?php the_title(); ?>
+
                             <?php echo get_the_term_list($post->ID, 'wptv_year'); ?>
 
 
                         </h1>
+
+                        <code><?php echo $post->post_name; ?></code>
 
 
                         <?php
