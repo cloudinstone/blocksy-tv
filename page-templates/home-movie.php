@@ -4,16 +4,25 @@
  * Template Name: Home Movie
  */
 
-use WPTVCore\DoubanMovieSearchApi;
+use WPTV\DoubanMoviePageParser;
+use WPTV\DoubanMovieSearchApi;
 
-get_header(); ?>
+get_header();
+
+?>
 
 <div class="ct-container">
     <?php
     get_template_part('template-parts/section-douban-items', null, [
+        'title' => __('即将上映', 'wptv'),
+        'transient' => 'douban_upcoming_movies_post_ids',
+        'douban_items' =>  wptv_get_douban_upcoming_items()
+    ]);
+
+    get_template_part('template-parts/section-douban-items', null, [
         'title' => __('正在热映', 'wptv'),
         'transient' => 'douban_nowplaying_movies_post_ids',
-        'douban_items' =>  wptv_get_douban_nowplaying_in_theaters()
+        'douban_items' =>  wptv_get_douban_nowplaying_items()
     ]);
 
     $tags = [

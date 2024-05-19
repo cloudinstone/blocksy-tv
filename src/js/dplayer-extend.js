@@ -2,12 +2,10 @@ class DPlayerExtend {
     constructor(dp, options) {
 
         options = Object.assign({}, {
-            introTime: null,
-            introTimeLimit: 120, // todo
-            outroTime: null,
-            outroTimeLimit: 120, // todo
-            onIntroTimeChange: (time) => { },
-            onOutroTimeChange: (time) => { },
+            introDuration: null,
+            maxIntroDuration: 120, // todo
+            outroDuration: null,
+            maxOutroDuration: 120, // todo
         }, options)
 
         for (const [key, value] of Object.entries(options)) {
@@ -18,31 +16,29 @@ class DPlayerExtend {
         [...dp.template.menu.children].reverse().slice(0, 3).forEach(item => item.remove());
         !dp.template.menu.children.length && dp.template.menu.remove()
 
-        dp.events.playerEvents.push('introtime_change');
-        dp.events.playerEvents.push('outrotime_change');
+        dp.events.playerEvents.push('intro_duration_change');
+        dp.events.playerEvents.push('outro_duration_change');
 
         const originPanel = dp.template.settingBox.children[0];
 
         const settingItemSkipIntro = this.createSettingItem({
             classname: 'skip-intro',
             label: '跳过片头',
-            time: this.introTime
+            duration: this.introDuration
         });
 
         console.log(dp);
 
         settingItemSkipIntro.addEventListener('click', (event) => {
-            let time = dp.video.currentTime;
-            if (this.introTimeLimit && time > this.introTimeLimit)
-                time = this.introTimeLimit
+            let duration = dp.video.currentTime;
+            if (this.maxIntroDuration && duration > this.maxIntroDuration)
+                duration = this.maxIntroDuration
 
-            let hms = this.toHms(time);
+            let hms = this.toHms(duration);
 
             settingItemSkipIntro.querySelector('.dplayer-time').innerText = hms;
 
-            dp.events.trigger('introtime_change', time);
-
-            this.onIntroTimeChange(time)
+            dp.events.trigger('intro_duration_change', duration);
         })
 
         originPanel.append(settingItemSkipIntro);
@@ -50,45 +46,39 @@ class DPlayerExtend {
         const settingItemSkipOutro = this.createSettingItem({
             classname: 'skip-outro',
             label: '跳过片尾',
-            time: this.outroTime
+            duration: this.outroDuration
         })
 
         settingItemSkipOutro.addEventListener('click', (event) => {
-            let time = dp.video.currentTime;
-            if (this.outroTimeLimit && time < dp.video.duration - this.outroTimeLimit)
-                time = dp.video.duration - this.outroTimeLimit
+            let duration = dp.video.currentTime;
+            if (this.maxOutroDuration && duration < dp.video.duration - this.maxOutroDuration)
+                duration = dp.video.duration - this.maxOutroDuration
 
-            let hms = this.toHms(time);
+            let hms = this.toHms(duration);
 
             settingItemSkipOutro.querySelector('.dplayer-time').innerText = hms;
 
-            dp.events.trigger('outrotime_change', time);
-
-            this.onOutroTimeChange(dp.time)
+            dp.events.trigger('outro_duration_change', duration);
         })
 
         originPanel.append(settingItemSkipOutro);
     }
 
     createSettingItem(options) {
-        options = Object.assign({}, options);
+        const { classname, label, duration = '' } = options;
 
         let settingItem = document.createElement('div');
-        settingItem.classList.add('dplayer-setting-item', 'dplayer-setting-' + options.classname);
+        settingItem.classList.add('dplayer-setting-item', 'dplayer-setting-' + classname);
 
-        let label = document.createElement('span');
-        label.classList.add('dplayer-label');
-        label.innerText = options.label;
+        let labelEl = document.createElement('span');
+        labelEl.classList.add('dplayer-label');
+        labelEl.innerText = label;
+        settingItem.append(labelEl)
 
-        settingItem.append(label)
-
-        let timeWrap = document.createElement('div');
-        timeWrap.classList.add('dplayer-time')
-
-        if (options.time)
-            timeWrap.innerText = options.time;
-
-        settingItem.append(timeWrap)
+        let durationEl = document.createElement('div');
+        durationEl.classList.add('dplayer-time')
+        durationEl.innerText = duration;
+        settingItem.append(durationEl)
 
         return settingItem;
     }

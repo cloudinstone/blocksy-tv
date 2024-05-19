@@ -4,7 +4,7 @@
  * Template Name: Sections
  */
 
-use WPTVCore\DoubanMovieSearchApi;
+use WPTV\DoubanMovieSearchApi;
 
 get_header(); ?>
 
@@ -16,9 +16,9 @@ get_header(); ?>
         <div class="item-loop">
             <?php
 
-            // $items = wptv_get_douban_upcoming_to_theaters();
+            // $items = wptv_get_douban_upcoming_items();
 
-            $douban_items = wptv_get_douban_nowplaying_in_theaters();
+            $douban_items = wptv_get_douban_nowplaying_items();
 
             $douban_ids = array_map(function ($item) {
                 return $item['id'];

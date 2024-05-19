@@ -1,0 +1,33 @@
+.episode-area {
+    padding: 1rem 0;
+}
+
+.episode-loop {
+    &-container {
+        max-width: 100%;
+        overflow: auto;
+    }
+
+    &[data-layout="list"] {
+        display: flex;
+        flex-direction: column;
+    }
+
+    &[data-layout="flex"] {
+        display: flex;
+        gap: 1rem;
+
+        .episode-item {
+            flex: 0 0 10rem;
+            width: 10rem;
+
+            h4 {
+                font-size: 1rem;
+
+                i {
+                    font-style: normal;
+                }
+            }
+        }
+    }
+}

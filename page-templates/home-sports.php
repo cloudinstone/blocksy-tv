@@ -4,8 +4,8 @@
  * Template Name: Home Sports
  */
 
-use WPTVCore\DoubanMovieSearchApi;
-use WPTVCore\VodItemDataSanitizer;
+use WPTV\DoubanMovieSearchApi;
+use WPTV\VodItemDataSanitizer;
 
 get_header();
 
@@ -48,7 +48,7 @@ var_dump($paged);
                 <?php
 
                 $args = [
-                    'post_type' => 'wptv_video',
+                    'post_type' => 'wptv_entry',
                     'posts_per_page' => 24,
                     's' => $search_term,
                     'tax_query' => [
@@ -92,7 +92,7 @@ var_dump($paged);
             <?php
 
             $args = [
-                'post_type' => 'wptv_video',
+                'post_type' => 'wptv_entry',
                 'posts_per_page' => 120,
                 'tax_query' => [
                     [

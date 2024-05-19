@@ -10,73 +10,31 @@ function destroyVideo(video) {
     video.remove();
 }
 
-function checkSource(url) {
-    let video = document.createElement("video");
-    video.volume = 0;
-    let hls = new Hls();
-    url = decodeURIComponent(url);
-    hls.loadSource(url);
-    hls.attachMedia(video);
-
-    // @link https://stackoverflow.com/questions/3258587/how-to-properly-unload-destroy-a-video-element
-
-    // for (const [eventCode, eventName] of Object.entries(Hls.Events)) {
-    //   hls.on(eventName, (event, data) => {
-    //     console.log(eventCode, event, data);
-    //   });
-    // }
-
-    let startTime = Date.now();
-
-    hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-        startTime = Date.now();
-    });
-
-    hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
-        const loadingTime = Date.now() - startTime;
-        console.log("loadingTime", loadingTime);
-
-        console.log(url, event, data);
-        let firstFrag = data.details.fragments[0];
-        let baseUrl = firstFrag.baseurl;
-        let fragUrl = firstFrag._url;
-        console.log("baseUrL", baseUrl);
-        console.log("fragUrl", fragUrl);
-
-        hls.destroy();
-        destroyVideo(video);
-    });
-
-    hls.on(Hls.Events.Error, (event, data) => {
-        if (data.type == "networkError") {
-            console.log("loadingTime", -1);
-        }
-
-        hls.destroy();
-        destroyVideo(video);
-    });
-}
 
 
 
-import Source from './source';
+import SourcesManager from './sources-manager';
+
+import SourceProviderChecker from './source-provider-checker';
 
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // SourceProviderChecker.checkAllProviders();
+
+    document.querySelector('.select-season')?.addEventListener('change', (event) => {
+        window.location.href = event.target.value;
+    })
 
 
     let sourceArea = document.querySelector('.source-area');
 
     if (sourceArea) {
-        const source = new Source(list);
-        source.init();
+        const sourceManager = new SourcesManager(list);
+        sourceManager.init();
 
         window.wptvSource = source;
     }
-
-
-
-
 
 
     /**
@@ -101,9 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 });
-
-
-
 
 import Scroll from './scroll';
 

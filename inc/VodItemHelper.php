@@ -8,8 +8,8 @@ class VodItemHelper {
 
         $remark = '';
 
-        $total = (int)get_post_meta($post->ID, 'total', true);
-        $serial = (int)get_post_meta($post->ID, 'serial', true);
+        $total = (int)get_post_meta($post->ID, 'episode_total', true);
+        $serial = (int)get_post_meta($post->ID, 'episode_serial', true);
 
         if ($total && $serial) {
             if ($total == $serial) {

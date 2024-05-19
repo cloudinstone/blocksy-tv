@@ -23,7 +23,7 @@
     }
 
     $posts = get_posts([
-        'post_type' => 'wptv_video',
+        'post_type' => 'wptv_entry',
         'post__in' => $post_ids,
         'posts_per_page' => 24
     ]);
@@ -43,6 +43,7 @@
             foreach ($posts as $post) {
                 get_template_part('template-parts/item');
             }
+            wp_reset_query();
             ?>
         </div>
     </div>

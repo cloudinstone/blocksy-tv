@@ -1,1 +1,1 @@
-<?php get_template_part('single-wptv_post');
+<?php get_template_part('single-wptv_entry');

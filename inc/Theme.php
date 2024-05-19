@@ -2,6 +2,8 @@
 
 namespace WPTVTheme;
 
+use WPTV\Helper;
+
 class Theme {
     public static function init() {
 
@@ -12,6 +14,22 @@ class Theme {
 
 
         add_action('blocksy:loop:before', [__CLASS__, 'filters']);
+
+        add_action('blocksy:loop:card:end', [__CLASS__, 'loop_card_end']);
+    }
+
+    public static function loop_card_end() {
+        global $post;
+
+
+        echo get_post_meta($post->ID, 'pubdate', true) . "\n";
+
+
+        echo get_the_term_list($post->ID, 'wptv_year') . "\n";
+        echo get_the_term_list($post->ID, 'wptv_category') . "\n";
+
+        $total = get_post_meta($post->ID, 'episode_serial', true);
+        echo sprintf('共%s集', $total);
     }
 
     public static function filters() {
@@ -19,8 +37,46 @@ class Theme {
             return;
         }
 
+        $genre_terms = get_terms([
+            'taxonomy' => 'wptv_genre',
+            // 'number' => 20,
+            'orderby' => 'count',
+            'order' => 'desc'
+        ]);
+        // var_dump($genre_terms);
+
+        $cat_term = get_queried_object();
+        $type = 'movie';
+
+        $map = [
+            'movie' => '电影',
+            'drama' => '电视剧',
+            'anime' => '动漫',
+            'vshow' => '综艺',
+            'shama' => '爽文短剧',
+            'sports' => '体育',
+            'docum' => '纪录片',
+        ];
+
+        if ($type = array_search($cat_term->name, $map)) {
+            $genre_names = Helper::get_comman_genres($type);
+            $terms = [];
+            foreach ($genre_terms as $term) {
+                if (in_array($term->name, $genre_names)) {
+                    $terms[] = $term;
+                }
+            }
+        } else {
+            $terms = get_terms([
+                'taxonomy' => 'wptv_genre',
+                'number' => 20,
+                'orderby' => 'count',
+                'order' => 'desc'
+            ]);
+        }
+
         echo '<div class="filters">';
-        self::term_list('wptv_genre', 'genre');
+        self::display_filter_group($terms, 'wptv_genre', 'genre');
         self::term_list('wptv_region', 'region');
         self::term_list('wptv_lang', 'lang');
         self::term_list('wptv_year', 'years');
@@ -28,7 +84,7 @@ class Theme {
     }
 
     public static function term_list($taxonomy, $query_var) {
-        $year_terms = get_terms([
+        $terms = get_terms([
             'taxonomy' => $taxonomy,
             'number' => 20,
             'orderby' => 'count',
@@ -51,6 +107,11 @@ class Theme {
         //     $base_url = home_url('/');
         // }
 
+        self::display_filter_group($terms, $taxonomy,  $query_var);
+    }
+
+    public static function display_filter_group($terms, $taxonomy,  $query_var) {
+        $taxobj = get_taxonomy($taxonomy);
 
         printf('<div class="filter-group__header">%s</div>', $taxobj->label);
 
@@ -58,7 +119,7 @@ class Theme {
         echo '<div class="filter-group__list ct-dynamic-filter">';
         $class = '' == get_query_var($query_var) ? 'active' : '';
         printf('<a class="%s" href="%s">%s</a>', $class, remove_query_arg($query_var), _x('全部', 'filter all label', 'wptv'));
-        foreach ($year_terms as $term) {
+        foreach ($terms as $term) {
             $class = $term->name == get_query_var($query_var) ? 'active' : '';
 
             $term_url = add_query_arg($query_var, $term->slug);

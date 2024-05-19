@@ -8,65 +8,78 @@
  * @package Blocksy
  */
 
-use WPTVCore\DoubanMovieSubjectParser;
+use WPTV\DoubanMovieSubjectParser;
 use Brick\Schema\SchemaReader;
 use Overtrue\Pinyin\Pinyin;
-use WPTVCore\ChatAnywhereApi;
-use WPTVCore\DataCleaner;
-use WPTVCore\DoubanBookSubjectParser;
-use WPTVCore\DoubanMoviePageParser;
-use WPTVCore\Helpers;
-use WPTVCore\SourceListParser;
-use WPTVCore\SourceProviderInspector;
-use WPTVCore\Test;
-use WPTVCore\VodItemDataSanitizer;
+use WPTV\ChatAnywhereApi;
+use WPTV\Controllers\WPTVEntryController;
+use WPTV\DataCleaner;
+use WPTV\DbMigrator;
+use WPTV\DoubanApiClient;
+use WPTV\DoubanApiDataImporter;
+use WPTV\DoubanApiDataQuery;
+use WPTV\DoubanBookSubjectParser;
+use WPTV\DoubanMoviePageParser;
+use WPTV\Helper;
+use WPTV\Objects\WPTVEntry;
+use WPTV\Objects\WPTVSource;
+use WPTV\EntryExternalRef;
+use WPTV\PostUpdater;
+use WPTV\SourceListParser;
+use WPTV\SourceProviderInspector;
+use WPTV\Test;
+use WPTV\TmdbApiClient;
+use WPTV\TmdbApiDataFinder;
+use WPTV\TmdbApiDataImporter;
+use WPTV\TmdbApiDataQuery;
+use WPTV\VodItemDataSanitizer;
+use WPTV\VodTitleParser;
 use WPTVTheme\VodItemHelper;
 
 get_header();
 
-
-
 global $post;
-
-
-
-
-
 set_time_limit(0);
 
 
-// die;
+$entry = new WPTVEntry($post);
 
-$provider_id = (int)get_query_var('provider');
+// $t = DoubanApiDataQuery::getSubjectBy('title', '男儿本色');
+// var_dump($t);
 
-$episode = (int)get_query_var('episode');
-
-$sources = wptv_get_vod_source_list($post->ID, 'string');
-
+// $t = DoubanApiDataImporter::findSubjectByTitle('男儿本色', 2024);
+// var_dump($t);
 
 
-$first = reset($sources);
 
-$provider_id = $first['provider_id'];
 
-$episode = 1;
+$top_type = Helper::get_post_top_type($post);
+
+
+if (in_array($entry->getScope(), ['series'])) {
+    $tmdb_data = WPTVEntryController::getEntryTmdbData($post->ID);
+
+    // var_dump($tmdb_data);
+
+    if (!$tmdb_data) {
+        TmdbApiDataFinder::updatePostTmdbData($post->ID);
+    }
+}
+
+
+
+
 ?>
 
 <div class="ct-container">
 
+
+
     <?php while (have_posts()) : the_post();
         global $post;
-
-        $src = $sources[$provider_id]['srcset'][$episode - 1];
     ?>
 
-        <template id="source-list-item">
-            <li>
-                <span class="name"></span>
-                <span class="episode-count"></span>
-                <span class="speed"></span>
-            </li>
-        </template>
+
 
         <template id="episode-list-item">
             <li>
@@ -74,44 +87,105 @@ $episode = 1;
             </li>
         </template>
 
-
-
         <div class="play-container">
             <div class="player-area">
                 <div id="player">
                     <video id="video" src="" controls></video>
                 </div>
 
-                <div class="player-toolbar">
-                    <button type="button" class="button mark-intro-end-time">标记当前视频时间为片头结束时间</button>
+                <div class="episode-area">
+                    <?php
+
+                    $tmdb_id = EntryExternalRef::getEntryExternalRef($post->ID, 'tmdb_id');
+
+                    if ($tmdb_id) {
+                        $api_data = TmdbApiDataQuery::getSeason($tmdb_id);
+
+                        // var_dump($api_data->episodes);
+
+
+                        echo '<div class="episode-loop-container">';
+                        echo '<div class="episode-loop" data-layout="flex">';
+
+
+
+                        foreach ($api_data->episodes as $episode) {
+                            get_template_part('template-parts/episode-item', null, $episode);
+                        }
+                        echo '</div>';
+                        echo '</div>';
+                    }
+                    ?>
                 </div>
             </div>
+
+
 
             <div class="info-area">
 
                 <?php
-                $season_posts = find_season_posts_by_title($post->post_title);
+                $season_id = EntryExternalRef::getEntryExternalRef($post->ID, 'tmdb_id');
 
-                echo '<select class="select-season" name="season">';
-                echo '<option value="">' . __('选择该剧集的其它季', 'wptv') . '</option>';
-                foreach ($season_posts as $season_post) {
-                    echo '<option value="' . esc_url(get_permalink($season_post->ID)) . '"' . selected($post->ID, $season_post->ID, false) . '>' . $season_post->post_title . '</option>';
+                $season_posts_by_tmdb = Helper::getSeasonPostsByTmdb($post->ID);
+                $season_posts_by_title = Helper::getSeasonPostsByTitle($post->post_title);
+
+                if (count($season_posts_by_title) > count($season_posts_by_tmdb)) {
+                    $season_posts = $season_posts_by_title;
+                } else {
+                    $season_posts = $season_posts_by_tmdb;
                 }
-                echo '</select>';
+
+                if (count($season_posts) > 1) {
+                    echo '<select class="select-season" name="season">';
+                    echo '<option disabled>' . __('选择该剧集的其它季', 'wptv') . '</option>';
+                    foreach ($season_posts as $season_post) {
+                        echo '<option value="' . esc_url(get_permalink($season_post->ID)) . '"' . selected($post->ID, $season_post->ID, false) . '>' . $season_post->post_title . '</option>';
+                    }
+                    echo '</select>';
+                }
+
+                $douban_id = get_post_meta($post->ID, 'douban_id', true);
+
+                if ($douban_id) {
+                    $post_ids = Helper::get_post_ids_by_douban_id($douban_id);
+
+                    if ($post_ids) {
+                        $version_posts = get_posts([
+                            'post_type' => 'wptv_entry',
+                            'post__in' => array_diff($post_ids, [$post->ID])
+                        ]);
+
+                        if ($version_posts) {
+                            echo '<div class="other-versions">';
+                            echo '<h2>其它版本</h2>';
+                            echo '<ul class="other-versions-list">';
+                            foreach ($version_posts as $post) {
+                                echo '<li>';
+                                the_title('<a href="' . get_permalink($post->ID) . '">', '</a>');
+                                echo '</li>';
+                            }
+                            wp_reset_query();
+                            echo '</ul>';
+
+                            echo '</div>';
+                        }
+                    }
+                }
+
                 ?>
 
 
                 <div class="source-area" data-post-id="<?php echo $post->ID; ?>">
-                    <div class="source-notice"></div>
+                    <div class="source-message">
+
+                    </div>
 
                     <div class="source-list-container">
-                        <ul class="source-list">
-                        </ul>
+                        <source-list id="source-list"></source-list>
                     </div>
 
                     <div class="episode-list-container">
-                        <ul class="episode-list" hidden>
-                        </ul>
+                        <episode-list item-type="thumbnail" id="episode-list"></episode-list>
                     </div>
                 </div>
 
@@ -123,15 +197,36 @@ $episode = 1;
 
                     <div class="info">
                         <h1 class="title">
-                            <?php the_title(); ?>
+                            <?php
+                            the_title();
+                            ?>
 
-                            <?php echo get_the_term_list($post->ID, 'wptv_year'); ?>
+                            <?php
+                            $keyword = preg_replace('/\s+.+/', '', $post->post_title);
+                            $reimport_url = home_url('?action=bulk_import_by_keyword&keyword=' . $keyword);
+                            printf('<a role="button" href="%s">全资源重新导入</a>', $reimport_url);
+                            ?>
 
 
                         </h1>
 
-                        <code><?php echo $post->post_name; ?></code>
+                        <h2>
+                            <?php
+                            $original_title = '';
+                            if ($post->original_title) {
+                                $original_title = $post->original_title;
 
+                                if ($post->season_number) {
+                                    $original_title .= ' ' . sprintf('Season %s', $post->season_number);
+                                }
+                            }
+
+                            echo ' <span>' . $original_title . '</span>';
+                            echo get_the_term_list($post->ID, 'wptv_year');
+                            ?>
+                        </h2>
+
+                        <code><?php echo $post->post_name; ?></code>
 
                         <?php
                         $aka =  get_post_meta($post->ID, 'aka', true);
@@ -139,6 +234,8 @@ $episode = 1;
                             $aka = html_entity_decode($aka);
                             echo ' <h2 class="subtitle">' . $aka . '</h2>';
                         }
+
+
                         ?>
 
                         <?php echo get_the_term_list($post->ID, 'wptv_category'); ?>
@@ -146,6 +243,17 @@ $episode = 1;
                         <?php
 
                         echo VodItemHelper::get_remark_html($post);
+
+
+
+                        $total =  get_post_meta($post->ID, 'episode_total', true);
+                        $serial =  get_post_meta($post->ID, 'episode_serial', true);
+                        if ($total) {
+                            printf('共%s集', $total);
+                        }
+                        if ($serial) {
+                            printf('更新到第%s集', $serial);
+                        }
 
                         ?>
 
@@ -160,6 +268,15 @@ $episode = 1;
                                     __('豆瓣评分', 'wptv'),
                                     get_post_meta($post->ID, 'douban_score', true)
                                 );
+                            }
+
+                            $tmdb_id = EntryExternalRef::getEntryExternalRef($post->ID, 'tmdb_id');
+
+                            if ($tmdb_id) {
+                                $tmdb_data = TmdbApiDataQuery::getSeason($tmdb_id);
+
+                                if ($tmdb_data->series_id)
+                                    echo Helper::get_tmdb_series_link($tmdb_data->series_id, $tmdb_data->season_number);
                             }
                             ?>
                         </span>
@@ -218,10 +335,7 @@ $episode = 1;
                     echo '</div>';
                 }
 
-
-
-
-
+                // var_dump($related_posts);
 
 
                 $tabs = [
@@ -241,6 +355,11 @@ $episode = 1;
 
                 <div class="content-panel" id="sources-panel" role="tabpanel" aria-labelledby="sources-tab">
                     <?php
+
+                    $parser = new SourceListParser(wptv_get_vod_source_list($post->ID));
+
+                    var_dump($parser);
+
                     wptv_vod_source_list($post->ID);
                     ?>
                 </div>
